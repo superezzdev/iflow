@@ -1,0 +1,11 @@
+{
+  "name": "@mindpost/config",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "tsconfig.base.json",
+    "tsconfig.react.json",
+    "tsconfig.node.json",
+    "tailwind.base.js"
+  ]
+}

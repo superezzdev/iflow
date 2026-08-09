@@ -1,0 +1,17 @@
+{
+  "name": "mindpost",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint",
+    "db:generate": "pnpm --filter @mindpost/database run db:generate"
+  },
+  "devDependencies": {
+    "@mindpost/config": "workspace:*",
+    "typescript": "^5.8.2"
+  },
+  "packageManager": "pnpm@11.18.0"
+}

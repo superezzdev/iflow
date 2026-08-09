@@ -1,0 +1,92 @@
+# ==============================================================================
+# MindPost Monorepo - Git Ignore Configuration
+# ==============================================================================
+
+# --- Dependencies & Package Managers ---
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+jspm_packages/
+web_modules/
+
+# --- Build Outputs & Bundlers ---
+dist/
+dist-ssr/
+build/
+out/
+.output/
+.wxt/
+.next/
+*.tsbuildinfo
+.turbo/
+
+# --- Extension Artifacts ---
+*.zip
+*.crx
+*.xpi
+
+# --- Environment & Secret Files ---
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+# Explicitly keep example environment file tracked:
+!.env.example
+
+# --- Logs & Runtime Output ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --- Database & Prisma ---
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+packages/database/src/generated/
+
+# --- Testing & Coverage ---
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# --- IDE & Editor Specific ---
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swo
+*.swp
+*.sublime-project
+*.sublime-workspace
+
+# --- Operating System Files ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# --- Miscellaneous ---
+.cache/
+.temp/
+.tmp/
+tmp/
