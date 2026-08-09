@@ -22,11 +22,13 @@ export type MessageRole = 'user' | 'assistant' | 'system';
  */
 export interface ConversationMessage {
   id: string;
+  conversationId?: string;
   role: MessageRole;
   content: string;
   timestamp: string; // ISO 8601 UTC
   orderIndex: number;
   metadata?: Record<string, unknown>;
+  createdAt?: string;
 }
 
 /**
@@ -43,6 +45,7 @@ export interface ConversationMetadata {
   assistantMessageCount: number;
   contentFingerprint: string;
   extra?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 /**
@@ -50,7 +53,8 @@ export interface ConversationMetadata {
  * Represents a clean, validated, source-agnostic AI conversation.
  */
 export interface Conversation {
-  id: string; // Stable deterministic identifier (e.g. conv_chatgpt_a1b2c3...)
+  id: string;
+  userId?: string;
   title: string;
   source: ConversationSource;
   url?: string;
@@ -58,6 +62,7 @@ export interface Conversation {
   totalMessages: number;
   metadata: ConversationMetadata;
   capturedAt: string; // ISO 8601 UTC
+  createdAt?: string;
   updatedAt?: string;
 }
 
@@ -66,9 +71,39 @@ export interface Conversation {
  */
 export interface ConversationSummary {
   id: string;
+  userId?: string;
   source: ConversationSource;
   title: string;
   capturedAt: string;
+  createdAt?: string;
   messageCount: number;
+  totalMessages?: number;
   contentFingerprint: string;
+}
+
+/**
+ * Payload for creating a conversation.
+ */
+export interface CreateConversationPayload {
+  title?: string;
+  source?: string;
+  url?: string;
+  messages: Array<{
+    id?: string;
+    role: MessageRole | string;
+    content: string;
+    orderIndex?: number;
+    metadata?: Record<string, unknown>;
+    timestamp?: string;
+  }>;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Query parameters for listing conversations.
+ */
+export interface ListConversationsQuery {
+  limit?: number;
+  offset?: number;
+  source?: string;
 }

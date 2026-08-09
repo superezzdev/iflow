@@ -1,3 +1,5 @@
+import type { PostDraft } from './post';
+
 /**
  * Individual key takeaway extracted from an AI conversation.
  */
@@ -8,19 +10,51 @@ export interface KeyTakeaway {
 }
 
 /**
- * Structured insight extracted by the AI provider from a captured conversation.
+ * Structured insight entity.
  */
-export interface ExtractedInsight {
+export interface Insight {
   id: string;
   conversationId: string;
-  title: string;
+  title?: string | null;
   coreIdea: string;
-  keyTakeaways: KeyTakeaway[];
-  practicalApplications: string[];
-  suggestedHooks: string[];
+  keyTakeaways?: KeyTakeaway[];
+  practicalApplications?: string[];
+  suggestedHooks?: string[];
   tags: string[];
-  suggestedTone?: 'professional' | 'storytelling' | 'educational' | 'analytical';
+  suggestedTone?: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
+  updatedAt?: string;
+  postDrafts?: PostDraft[];
+}
+
+/**
+ * Backward compatibility alias for ExtractedInsight.
+ */
+export type ExtractedInsight = Insight;
+
+/**
+ * Payload for creating an insight.
+ */
+export interface CreateInsightPayload {
+  conversationId: string;
+  title?: string;
+  coreIdea: string;
+  keyTakeaways?: KeyTakeaway[] | unknown;
+  practicalApplications?: string[] | unknown;
+  suggestedHooks?: string[] | unknown;
+  tags?: string[];
+  suggestedTone?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Query parameters for listing insights.
+ */
+export interface ListInsightsQuery {
+  conversationId?: string;
+  limit?: number;
+  offset?: number;
 }
 
 /**

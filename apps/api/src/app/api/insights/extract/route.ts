@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { AIProviderFactory } from '@mindpost/ai';
-import { ConversationRepository } from '@mindpost/database';
+import { ConversationRepository, InsightRepository } from '@mindpost/database';
 import type { ExtractInsightsRequest, ApiErrorResponse, ApiSuccessResponse, ExtractedInsight } from '@mindpost/shared';
+import { getCurrentUser } from '../../../../lib/session';
 
 export async function POST(req: Request) {
   try {
+    const user = await getCurrentUser(req);
     const body = (await req.json()) as ExtractInsightsRequest;
 
     if (!body.conversation || !body.conversation.messages || body.conversation.messages.length === 0) {
@@ -27,8 +29,26 @@ export async function POST(req: Request) {
     // Save conversation and insight if database is configured
     try {
       if (process.env.DATABASE_URL) {
-        await ConversationRepository.create(body.conversation);
-        await ConversationRepository.saveInsight(insight);
+        await ConversationRepository.create({
+          userId: user.id,
+          title: body.conversation.title,
+          source: body.conversation.source,
+          url: body.conversation.url,
+          metadata: body.conversation.metadata,
+          messages: body.conversation.messages
+        });
+        await InsightRepository.create({
+          id: insight.id,
+          conversationId: insight.conversationId,
+          title: insight.title ?? undefined,
+          coreIdea: insight.coreIdea,
+          keyTakeaways: insight.keyTakeaways,
+          practicalApplications: insight.practicalApplications,
+          suggestedHooks: insight.suggestedHooks,
+          tags: insight.tags,
+          suggestedTone: insight.suggestedTone ?? undefined,
+          metadata: insight.metadata ?? undefined
+        });
       }
     } catch (dbErr) {
       console.warn('[MindPost API] Database persistence skipped or failed:', dbErr);

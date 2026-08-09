@@ -6,6 +6,7 @@ export * from './domain/id-generator';
 export * from './domain/normalizer';
 
 // Export all types
+export * from './types/user';
 export * from './types/conversation';
 export * from './types/insight';
 export * from './types/post';
