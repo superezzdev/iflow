@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server';
 import { AIProviderFactory } from '@mindpost/ai';
-import { PostRepository } from '@mindpost/database';
-import type {
-  GeneratePostRequest,
-  ApiErrorResponse,
-  ApiSuccessResponse,
-  SocialPost,
-  ExtractedInsight
+import { PostDraftRepository } from '@mindpost/database';
+import {
+  Platform,
+  PostDraftStatus,
+  type GeneratePostRequest,
+  type ApiErrorResponse,
+  type ApiSuccessResponse,
+  type SocialPost,
+  type ExtractedInsight
 } from '@mindpost/shared';
+import { getCurrentUser } from '../../../lib/session';
 
 export async function POST(req: Request) {
   try {
+    const user = await getCurrentUser(req);
     const body = (await req.json()) as GeneratePostRequest;
 
     if (!body.conversation || !body.conversation.messages || body.conversation.messages.length === 0) {
@@ -39,20 +43,22 @@ export async function POST(req: Request) {
 
     let savedPost: SocialPost;
 
-    if (process.env.DATABASE_URL) {
+    if (process.env.DATABASE_URL && insight.id) {
       try {
-        savedPost = await PostRepository.create({
-          conversationId: body.conversation.id,
+        const postDraft = await PostDraftRepository.create({
+          userId: user.id,
           insightId: insight.id,
-          platform: generatedDraft.platform,
-          hook: generatedDraft.hook,
-          body: generatedDraft.body,
-          callToAction: generatedDraft.callToAction,
-          hashtags: generatedDraft.hashtags,
-          formattedContent: generatedDraft.formattedContent,
-          status: 'draft',
-          metadata: generatedDraft.metadata
+          platform: Platform.LINKEDIN,
+          content: generatedDraft.formattedContent,
+          status: PostDraftStatus.DRAFT
         });
+
+        savedPost = {
+          ...generatedDraft,
+          id: postDraft.id,
+          createdAt: postDraft.createdAt,
+          updatedAt: postDraft.updatedAt
+        };
       } catch (dbErr) {
         console.warn('[MindPost API] Database persistence fallback to in-memory response:', dbErr);
         savedPost = {

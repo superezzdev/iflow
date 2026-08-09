@@ -7,64 +7,99 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Conversation {
-  id            String       @id @default(cuid())
-  source        String       @default("chatgpt") // 'chatgpt', 'claude', 'gemini'
-  title         String
-  url           String?
-  totalMessages Int          @default(0)
-  messages      Json         // Normalized array of ChatMessage
-  metadata      Json?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+enum Platform {
+  LINKEDIN
+}
 
-  insights      Insight[]
-  posts         SocialPost[]
+enum PostDraftStatus {
+  DRAFT
+  APPROVED
+  DISCARDED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String?        @unique
+  name          String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  conversations Conversation[]
+  postDrafts    PostDraft[]
 
   @@index([createdAt])
+}
+
+model Conversation {
+  id            String                @id @default(cuid())
+  userId        String
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String?
+  source        String                @default("chatgpt")
+  url           String?
+  totalMessages Int                   @default(0)
+  metadata      Json?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  messages      ConversationMessage[]
+  insights      Insight[]
+
+  @@index([userId])
+  @@index([createdAt])
   @@index([source])
+}
+
+model ConversationMessage {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String       @db.Text
+  orderIndex     Int          @default(0)
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([orderIndex])
 }
 
 model Insight {
   id                    String       @id @default(cuid())
   conversationId        String
   conversation          Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  title                 String
-  coreIdea              String
-  keyTakeaways          Json         // KeyTakeaway[]
-  practicalApplications Json         // string[]
-  suggestedHooks        Json         // string[]
+  title                 String?
+  coreIdea              String       @db.Text
+  keyTakeaways          Json?
+  practicalApplications Json?
+  suggestedHooks        Json?
   tags                  String[]     @default([])
   suggestedTone         String?
+  metadata              Json?
   createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
 
-  posts                 SocialPost[]
+  postDrafts            PostDraft[]
 
   @@index([conversationId])
   @@index([createdAt])
 }
 
-model SocialPost {
-  id               String        @id @default(cuid())
-  conversationId   String
-  conversation     Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  insightId        String?
-  insight          Insight?      @relation(fields: [insightId], references: [id], onDelete: SetNull)
-  platform         String        @default("linkedin") // 'linkedin', 'x', 'threads'
-  hook             String
-  body             String
-  callToAction     String?
-  hashtags         String[]      @default([])
-  formattedContent String
-  status           String        @default("draft") // 'draft', 'review', 'approved', 'rejected'
-  characterCount   Int           @default(0)
-  metadata         Json?
-  approvedAt       DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+model PostDraft {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  insightId String
+  insight   Insight         @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  platform  Platform        @default(LINKEDIN)
+  content   String          @db.Text
+  status    PostDraftStatus @default(DRAFT)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
-  @@index([conversationId])
-  @@index([platform])
+  @@index([userId])
+  @@index([insightId])
   @@index([status])
+  @@index([platform])
   @@index([createdAt])
 }

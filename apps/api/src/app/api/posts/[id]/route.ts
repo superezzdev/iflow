@@ -1,48 +1,24 @@
-import { NextResponse } from 'next/server';
-import { PostRepository } from '@mindpost/database';
-import type {
-  UpdatePostPayload,
-  ApiSuccessResponse,
-  ApiErrorResponse,
-  SocialPost
-} from '@mindpost/shared';
+import { UpdatePostDraftSchema } from '@mindpost/shared';
+import { apiSuccess, handleApiError, handleOptionsResponse } from '../../../../lib/errors';
+import { getCurrentUser } from '../../../../lib/session';
+import { PostService } from '../../../../services/post.service';
+
+export async function OPTIONS() {
+  return handleOptionsResponse();
+}
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    const user = await getCurrentUser(req);
 
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NO_DATABASE', message: 'Database not connected' } },
-        { status: 503 }
-      );
-    }
-
-    const post = await PostRepository.findById(id);
-    if (!post) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NOT_FOUND', message: `Post with ID "${id}" not found` } },
-        { status: 404 }
-      );
-    }
-
-    const response: ApiSuccessResponse<{ post: SocialPost }> = {
-      success: true,
-      data: { post }
-    };
-    return NextResponse.json(response);
+    const post = await PostService.getPostDraftById(id, user.id);
+    return apiSuccess(post);
   } catch (error) {
-    const errorResp: ApiErrorResponse = {
-      success: false,
-      error: {
-        code: 'GET_POST_FAILED',
-        message: error instanceof Error ? error.message : 'Failed to retrieve post'
-      }
-    };
-    return NextResponse.json(errorResp, { status: 500 });
+    return handleApiError(error);
   }
 }
 
@@ -52,30 +28,13 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const body = (await req.json()) as UpdatePostPayload;
+    const user = await getCurrentUser(req);
+    const rawBody = await req.json();
+    const validatedData = UpdatePostDraftSchema.parse(rawBody);
 
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NO_DATABASE', message: 'Database not connected' } },
-        { status: 503 }
-      );
-    }
-
-    const updatedPost = await PostRepository.update(id, body);
-
-    const response: ApiSuccessResponse<{ post: SocialPost }> = {
-      success: true,
-      data: { post: updatedPost }
-    };
-    return NextResponse.json(response);
+    const updatedPost = await PostService.updatePostDraft(id, user.id, validatedData);
+    return apiSuccess(updatedPost);
   } catch (error) {
-    const errorResp: ApiErrorResponse = {
-      success: false,
-      error: {
-        code: 'UPDATE_POST_FAILED',
-        message: error instanceof Error ? error.message : 'Failed to update post'
-      }
-    };
-    return NextResponse.json(errorResp, { status: 500 });
+    return handleApiError(error);
   }
 }

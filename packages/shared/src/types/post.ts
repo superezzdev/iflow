@@ -1,22 +1,76 @@
 /**
- * Target social platform for content generation.
- * Phase 1 focus: 'linkedin'
+ * Supported platforms in MindPost.
+ * Phase 1 initially supports: LINKEDIN.
  */
-export type TargetPlatform = 'linkedin' | 'x' | 'threads';
+export const Platform = {
+  LINKEDIN: 'LINKEDIN'
+} as const;
+
+export type Platform = (typeof Platform)[keyof typeof Platform];
 
 /**
- * Lifecycle state of a generated post.
+ * Lifecycle states of a PostDraft.
  */
-export type PostStatus = 'draft' | 'review' | 'approved' | 'rejected';
+export const PostDraftStatus = {
+  DRAFT: 'DRAFT',
+  APPROVED: 'APPROVED',
+  DISCARDED: 'DISCARDED'
+} as const;
+
+export type PostDraftStatus = (typeof PostDraftStatus)[keyof typeof PostDraftStatus];
 
 /**
- * Tone style for generated social media posts.
+ * Canonical PostDraft entity.
  */
+export interface PostDraft {
+  id: string;
+  userId: string;
+  insightId: string;
+  platform: Platform;
+  content: string;
+  status: PostDraftStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Payload for creating a new post draft.
+ */
+export interface CreatePostDraftPayload {
+  insightId: string;
+  platform?: Platform;
+  content: string;
+  status?: PostDraftStatus;
+}
+
+/**
+ * Payload for updating an existing post draft.
+ */
+export interface UpdatePostDraftPayload {
+  content?: string;
+  status?: PostDraftStatus;
+  platform?: Platform;
+}
+
+/**
+ * Query filters for listing post drafts.
+ */
+export interface ListPostDraftsQuery {
+  insightId?: string;
+  platform?: Platform;
+  status?: PostDraftStatus;
+  limit?: number;
+  offset?: number;
+}
+
+/* ==========================================================================
+   Backward Compatibility Aliases & Types for Phase 1 Stubs
+   ========================================================================== */
+
+export type TargetPlatform = 'linkedin' | 'x' | 'threads' | Platform;
+export type PostStatus = 'draft' | 'review' | 'approved' | 'rejected' | PostDraftStatus;
 export type PostTone = 'professional' | 'thought_leadership' | 'storytelling' | 'educational' | 'actionable';
 
-/**
- * Options to control post generation.
- */
 export interface PostGenerationOptions {
   platform: TargetPlatform;
   tone?: PostTone;
@@ -26,9 +80,6 @@ export interface PostGenerationOptions {
   customInstructions?: string;
 }
 
-/**
- * Canonical Social Post data model.
- */
 export interface SocialPost {
   id: string;
   conversationId: string;
@@ -47,9 +98,6 @@ export interface SocialPost {
   metadata?: Record<string, unknown>;
 }
 
-/**
- * Payload for updating / editing a post during review.
- */
 export interface UpdatePostPayload {
   hook?: string;
   body?: string;
@@ -57,4 +105,6 @@ export interface UpdatePostPayload {
   hashtags?: string[];
   formattedContent?: string;
   status?: PostStatus;
+  content?: string;
+  platform?: Platform;
 }

@@ -27,6 +27,8 @@ export function buildPostUserPrompt(
 ): string {
   const tone = options.tone ?? 'thought_leadership';
   const custom = options.customInstructions ? `\nSpecial instructions: ${options.customInstructions}` : '';
+  const keyTakeaways = Array.isArray(insight.keyTakeaways) ? insight.keyTakeaways : [];
+  const practicalApps = Array.isArray(insight.practicalApplications) ? insight.practicalApplications : [];
 
   return `Generate a high-performing ${options.platform.toUpperCase()} post based on the following insights extracted from an AI conversation.
 
@@ -38,10 +40,10 @@ Title: ${insight.title}
 Core Idea: ${insight.coreIdea}
 
 Key Takeaways:
-${insight.keyTakeaways.map((k, i) => `${i + 1}. ${k.point}: ${k.explanation}`).join('\n')}
+${keyTakeaways.map((k, i) => `${i + 1}. ${k.point}: ${k.explanation}`).join('\n')}
 
 Practical Applications:
-${insight.practicalApplications.map((p) => `- ${p}`).join('\n')}
+${practicalApps.map((p) => `- ${p}`).join('\n')}
 
 Original Conversation Title: ${conversation.title}
 `;
