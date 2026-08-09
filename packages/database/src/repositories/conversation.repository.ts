@@ -1,33 +1,44 @@
 import { prisma } from '../client';
 import type { Prisma } from '@prisma/client';
-import type { CapturedConversation, CaptureSource, ExtractedInsight } from '@mindpost/shared';
+import type { Conversation, ConversationMetadata, ConversationSource, ExtractedInsight } from '@mindpost/shared';
 
 export class ConversationRepository {
   /**
    * Save a newly captured conversation.
    */
-  static async create(conversation: CapturedConversation): Promise<CapturedConversation> {
+  static async create(conversation: Conversation): Promise<Conversation> {
     const record = await prisma.conversation.create({
       data: {
         id: conversation.id,
         source: conversation.source,
         title: conversation.title,
-        url: conversation.url,
+        url: conversation.metadata.sourceUrl || conversation.url,
         totalMessages: conversation.totalMessages,
         messages: conversation.messages as unknown as Prisma.InputJsonValue,
-        metadata: conversation.metadata ? (conversation.metadata as Prisma.InputJsonValue) : undefined
+        metadata: conversation.metadata as unknown as Prisma.InputJsonValue
       }
     });
 
+    const metadata = (record.metadata as unknown as ConversationMetadata) || {
+      source: record.source as ConversationSource,
+      sourceUrl: record.url ?? undefined,
+      capturedAt: record.createdAt.toISOString(),
+      characterCount: 0,
+      wordCount: 0,
+      userMessageCount: 0,
+      assistantMessageCount: 0,
+      contentFingerprint: record.id
+    };
+
     return {
       id: record.id,
-      source: record.source as CaptureSource,
+      source: record.source as ConversationSource,
       title: record.title,
-      url: record.url ?? undefined,
       totalMessages: record.totalMessages,
-      messages: record.messages as unknown as CapturedConversation['messages'],
-      metadata: (record.metadata as Record<string, unknown>) ?? undefined,
-      capturedAt: record.createdAt.toISOString()
+      messages: record.messages as unknown as Conversation['messages'],
+      metadata,
+      capturedAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString()
     };
   }
 
