@@ -14,11 +14,16 @@ import { StatusIndicator, type ConnectionState } from '../components/ui/StatusIn
 import { Button } from '../components/ui/Button';
 import { saveCapturedConversation } from '../utils/storage';
 import type { ExtensionScreen } from '../components/Header';
-import type { ParserResult, CapturedConversation } from '@mindpost/shared';
+import {
+  ConversationNormalizer,
+  type ParserResult,
+  type Conversation,
+  type RawConversation
+} from '@mindpost/shared';
 
 export interface PopupScreenProps {
   onNavigate: (screen: ExtensionScreen) => void;
-  onConversationCaptured?: (conversation: CapturedConversation) => void;
+  onConversationCaptured?: (conversation: Conversation) => void;
 }
 
 export const PopupScreen: FC<PopupScreenProps> = ({ onNavigate, onConversationCaptured }) => {
@@ -93,32 +98,25 @@ export const PopupScreen: FC<PopupScreenProps> = ({ onNavigate, onConversationCa
         );
       }
     } else {
-      // Development / Test mode mock capture
-      const mockConversation: CapturedConversation = {
-        id: `conv_${Date.now()}`,
+      // Development / Test mode mock capture normalized through domain layer
+      const rawMock: RawConversation = {
         source: 'chatgpt',
         title: 'PostgreSQL Connection Pooling in Serverless Next.js',
         url: activeTabUrl || 'https://chatgpt.com/c/example',
         capturedAt: new Date().toISOString(),
-        totalMessages: 4,
         messages: [
           {
-            id: 'msg_1',
             role: 'user',
-            content: 'How do I properly configure connection pooling with Prisma in Next.js serverless functions?',
-            timestamp: new Date().toISOString(),
-            orderIndex: 0
+            content: 'How do I properly configure connection pooling with Prisma in Next.js serverless functions?'
           },
           {
-            id: 'msg_2',
             role: 'assistant',
-            content: 'To configure Prisma connection pooling in serverless Next.js:\n1. Pin client on globalThis\n2. Use PgBouncer / Accelerate\n3. Keep query timeouts low',
-            timestamp: new Date().toISOString(),
-            orderIndex: 1
+            content: 'To configure Prisma connection pooling in serverless Next.js:\n1. Pin client on globalThis\n2. Use PgBouncer / Accelerate\n3. Keep query timeouts low'
           }
         ]
       };
 
+      const mockConversation = ConversationNormalizer.normalize(rawMock);
       await saveCapturedConversation(mockConversation);
       if (onConversationCaptured) {
         onConversationCaptured(mockConversation);
