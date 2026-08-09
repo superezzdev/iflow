@@ -1,90 +1,32 @@
 import { useState, type FC } from 'react';
-import { Header } from '../../components/Header';
-import { LinkedinIcon } from '../../components/LinkedinIcon';
-import { Sparkles, MessageSquare, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Header, type ExtensionScreen } from '../../components/Header';
+import { PopupScreen } from '../../screens/PopupScreen';
+import { DashboardScreen } from '../../screens/DashboardScreen';
+import { CaptureStatusScreen } from '../../screens/CaptureStatusScreen';
+import { ReviewScreen } from '../../screens/ReviewScreen';
+import { SettingsScreen } from '../../screens/SettingsScreen';
 
 export const App: FC = () => {
-  const [currentStep] = useState<number>(1);
+  const [currentScreen, setCurrentScreen] = useState<ExtensionScreen>('popup');
 
   return (
-    <div className="w-[400px] min-h-[520px] bg-slate-50 flex flex-col justify-between text-slate-800 text-sm">
-      <div>
-        <Header />
+    <div className="w-[420px] min-h-[580px] bg-slate-100 flex flex-col justify-between text-slate-800 text-sm antialiased select-none font-sans">
+      {/* Sticky Top Header */}
+      <Header currentScreen={currentScreen} onNavigate={setCurrentScreen} />
 
-        <div className="p-4 space-y-4">
-          {/* Workflow progress indicator */}
-          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex items-center justify-between text-xs text-slate-500 font-medium pb-2 border-b border-slate-100">
-              <span>Pipeline Progress</span>
-              <span className="text-brand-600 font-semibold">Step {currentStep} of 4</span>
-            </div>
+      {/* Screen View Router */}
+      <main className="flex-1 overflow-y-auto">
+        {currentScreen === 'popup' && <PopupScreen onNavigate={setCurrentScreen} />}
+        {currentScreen === 'dashboard' && <DashboardScreen onNavigate={setCurrentScreen} />}
+        {currentScreen === 'capture-status' && <CaptureStatusScreen onNavigate={setCurrentScreen} />}
+        {currentScreen === 'review' && <ReviewScreen onNavigate={setCurrentScreen} />}
+        {currentScreen === 'settings' && <SettingsScreen onNavigate={setCurrentScreen} />}
+      </main>
 
-            <div className="grid grid-cols-4 gap-1.5 mt-3">
-              {[
-                { label: 'Capture', icon: MessageSquare },
-                { label: 'Insights', icon: Sparkles },
-                { label: 'LinkedIn', icon: LinkedinIcon },
-                { label: 'Save', icon: CheckCircle2 }
-              ].map((step, idx) => {
-                const Icon = step.icon;
-                const isActive = idx + 1 === currentStep;
-                const isPassed = idx + 1 < currentStep;
-
-                return (
-                  <div
-                    key={step.label}
-                    className={`flex flex-col items-center p-2 rounded-lg text-center transition-all ${
-                      isActive
-                        ? 'bg-brand-50 text-brand-700 font-semibold ring-1 ring-brand-300'
-                        : isPassed
-                        ? 'bg-emerald-50 text-emerald-700 font-medium'
-                        : 'bg-slate-50 text-slate-400'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5 mb-1" />
-                    <span className="text-[10px]">{step.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Main action card */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-            <div className="flex items-start space-x-3">
-              <div className="p-2 bg-brand-50 text-brand-600 rounded-lg">
-                <MessageSquare className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-slate-900">ChatGPT Conversation Capture</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Open a ChatGPT chat tab and click below to extract key insights and generate a LinkedIn post.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="button"
-                className="w-full inline-flex items-center justify-center space-x-2 py-2.5 px-4 rounded-lg bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-medium text-xs shadow-sm transition-colors cursor-pointer"
-                disabled
-              >
-                <span>Capture & Generate Post</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-              <p className="text-[11px] text-center text-slate-400 mt-2">
-                Phase 1 Core Pipeline Ready for Implementation
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer info */}
-      <footer className="p-3 bg-white border-t border-slate-200 text-center">
-        <p className="text-[11px] text-slate-400">
-          MindPost Extension v0.1.0 • LinkedIn Creator Edition
-        </p>
+      {/* Bottom Footer Bar */}
+      <footer className="px-3.5 py-2 bg-white border-t border-slate-200 text-center flex items-center justify-between text-[11px] text-slate-400">
+        <span>MindPost Studio • Phase 1</span>
+        <span className="capitalize text-slate-500 font-medium">{currentScreen.replace('-', ' ')}</span>
       </footer>
     </div>
   );
