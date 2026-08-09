@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { clearAllCapturedConversations } from '../utils/storage';
 import type { ExtensionScreen } from '../components/Header';
 
 export interface SettingsScreenProps {
@@ -23,9 +24,10 @@ export const SettingsScreen: FC<SettingsScreenProps> = ({ onNavigate }) => {
   const [localOnlyMode, setLocalOnlyMode] = useState<boolean>(false);
   const [clearStatus, setClearStatus] = useState<string | null>(null);
 
-  const handleClearData = () => {
+  const handleClearData = async () => {
     if (window.confirm('Clear all captured conversation transcripts and local post drafts?')) {
-      setClearStatus('Local data cleared successfully');
+      await clearAllCapturedConversations();
+      setClearStatus('All local conversation data cleared successfully');
       setTimeout(() => setClearStatus(null), 2500);
     }
   };
@@ -149,7 +151,7 @@ export const SettingsScreen: FC<SettingsScreenProps> = ({ onNavigate }) => {
           </button>
         </div>
 
-        {/* Toggle: Privacy PII Stripping */}
+        {/* Toggle: Privacy PII Redaction */}
         <div className="flex items-center justify-between border-t border-slate-100 pt-2">
           <div>
             <span className="text-xs font-semibold text-slate-800">PII Redaction</span>

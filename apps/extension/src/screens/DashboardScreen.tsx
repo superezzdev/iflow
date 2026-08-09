@@ -1,20 +1,63 @@
-import { useState, type FC } from 'react';
-import { MessageSquare, Sparkles, FileText, CheckCircle2, ArrowRight } from 'lucide-react';
+import { useState, useEffect, type FC } from 'react';
+import {
+  MessageSquare,
+  Sparkles,
+  FileText,
+  CheckCircle2,
+  ArrowRight,
+  Trash2,
+  Calendar
+} from 'lucide-react';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { LinkedinIcon } from '../components/LinkedinIcon';
+import {
+  getCapturedConversations,
+  deleteCapturedConversation
+} from '../utils/storage';
 import type { ExtensionScreen } from '../components/Header';
+import type { CapturedConversation } from '@mindpost/shared';
 
 export type DashboardTab = 'conversations' | 'insights' | 'drafts' | 'approved';
 
 export interface DashboardScreenProps {
   onNavigate: (screen: ExtensionScreen) => void;
+  onSelectConversation?: (conversation: CapturedConversation) => void;
 }
 
-export const DashboardScreen: FC<DashboardScreenProps> = ({ onNavigate }) => {
+export const DashboardScreen: FC<DashboardScreenProps> = ({
+  onNavigate,
+  onSelectConversation
+}) => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('conversations');
-  const [showSampleData, setShowSampleData] = useState<boolean>(false);
+  const [conversations, setConversations] = useState<CapturedConversation[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const loadConversations = async () => {
+    setIsLoading(true);
+    const data = await getCapturedConversations();
+    setConversations(data);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    loadConversations();
+  }, []);
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Remove this captured conversation from local storage?')) {
+      await deleteCapturedConversation(id);
+      await loadConversations();
+    }
+  };
+
+  const handleSelect = (conv: CapturedConversation) => {
+    if (onSelectConversation) {
+      onSelectConversation(conv);
+    }
+    onNavigate('capture-status');
+  };
 
   return (
     <div className="p-4 space-y-4">
@@ -46,59 +89,56 @@ export const DashboardScreen: FC<DashboardScreenProps> = ({ onNavigate }) => {
         })}
       </div>
 
-      {/* Tab Content Header with Preview Toggle */}
+      {/* Tab Content Header */}
       <div className="flex items-center justify-between text-xs px-1">
         <span className="font-bold text-slate-900 capitalize">
-          {activeTab === 'conversations' && 'Recent Conversations'}
+          {activeTab === 'conversations' && `Recent Conversations (${conversations.length})`}
           {activeTab === 'insights' && 'Detected Insights'}
           {activeTab === 'drafts' && 'Draft Posts'}
           {activeTab === 'approved' && 'Approved Posts'}
         </span>
-
-        {/* Realistic Demo Preview Toggle */}
-        <button
-          type="button"
-          onClick={() => setShowSampleData((prev) => !prev)}
-          className="text-[10px] text-brand-600 hover:text-brand-700 font-medium underline cursor-pointer"
-        >
-          {showSampleData ? 'Show Empty States' : 'Preview Sample Cards'}
-        </button>
       </div>
 
       {/* 1. Recent Conversations Tab */}
       {activeTab === 'conversations' && (
         <>
-          {showSampleData ? (
+          {isLoading ? (
+            <div className="p-6 text-center text-xs text-slate-400 bg-white rounded-xl border border-slate-200">
+              Loading saved conversations...
+            </div>
+          ) : conversations.length > 0 ? (
             <div className="space-y-2.5">
-              {[
-                {
-                  title: 'Optimizing PostgreSQL Indexing for Full-Text Search',
-                  source: 'chatgpt',
-                  time: '2 hours ago',
-                  messages: 8
-                },
-                {
-                  title: 'Designing Zero-Downtime Prisma Migrations',
-                  source: 'chatgpt',
-                  time: 'Yesterday',
-                  messages: 12
-                }
-              ].map((item, idx) => (
+              {conversations.map((item) => (
                 <div
-                  key={idx}
-                  className="p-3 bg-white rounded-xl border border-slate-200 hover:border-slate-300 transition-all shadow-2xs space-y-2"
+                  key={item.id}
+                  onClick={() => handleSelect(item)}
+                  className="p-3.5 bg-white rounded-xl border border-slate-200 hover:border-brand-300 transition-all shadow-2xs space-y-2 cursor-pointer group"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="text-xs font-semibold text-slate-900 leading-snug">{item.title}</h4>
-                    <Badge variant="neutral" size="sm">
-                      {item.source}
-                    </Badge>
+                    <h4 className="text-xs font-semibold text-slate-900 group-hover:text-brand-700 leading-snug line-clamp-2">
+                      {item.title}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDelete(item.id, e)}
+                      className="text-slate-300 hover:text-rose-600 p-1 -mr-1 rounded-md transition-colors cursor-pointer"
+                      title="Delete conversation"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-400">
-                    <span>{item.messages} messages • {item.time}</span>
-                    <Button variant="outline" size="sm" onClick={() => onNavigate('review')}>
-                      Review Post
-                    </Button>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100">
+                    <span className="flex items-center gap-1">
+                      <Badge variant="neutral" size="sm">
+                        {item.source}
+                      </Badge>
+                      <span>{item.totalMessages} turns</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-slate-500">
+                      <Calendar className="w-3 h-3 text-slate-400" />
+                      {new Date(item.capturedAt).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -109,7 +149,7 @@ export const DashboardScreen: FC<DashboardScreenProps> = ({ onNavigate }) => {
               title="No conversations captured yet."
               description="Open ChatGPT and capture a conversation to get started."
               actionLabel="Capture from ChatGPT"
-              onAction={() => onNavigate('capture-status')}
+              onAction={() => onNavigate('popup')}
             />
           )}
         </>
@@ -117,111 +157,35 @@ export const DashboardScreen: FC<DashboardScreenProps> = ({ onNavigate }) => {
 
       {/* 2. Detected Insights Tab */}
       {activeTab === 'insights' && (
-        <>
-          {showSampleData ? (
-            <div className="space-y-2.5">
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between">
-                  <Badge variant="brand" size="sm">
-                    Core Breakthrough
-                  </Badge>
-                  <span className="text-[10px] text-slate-400">10m ago</span>
-                </div>
-                <h4 className="text-xs font-bold text-slate-900">
-                  Connection pool exhaustion in serverless occurs during cold starts.
-                </h4>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Key takeaway: Use pgBouncer or direct Prisma singleton pooling to prevent connection bursts during scale spikes.
-                </p>
-                <div className="flex items-center gap-1 flex-wrap pt-1">
-                  <Badge variant="neutral" size="sm">#PostgreSQL</Badge>
-                  <Badge variant="neutral" size="sm">#Serverless</Badge>
-                  <Badge variant="neutral" size="sm">#Architecture</Badge>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <EmptyState
-              icon={<Sparkles className="w-5 h-5" />}
-              title="No detected insights yet."
-              description="Capture an AI conversation to extract actionable key takeaways and thought leadership hooks."
-              actionLabel="Start Capturing"
-              onAction={() => onNavigate('capture-status')}
-            />
-          )}
-        </>
+        <EmptyState
+          icon={<Sparkles className="w-5 h-5" />}
+          title="No detected insights yet."
+          description="Capture an AI conversation to extract actionable key takeaways and thought leadership hooks."
+          actionLabel="Start Capturing"
+          onAction={() => onNavigate('popup')}
+        />
       )}
 
       {/* 3. Draft Posts Tab */}
       {activeTab === 'drafts' && (
-        <>
-          {showSampleData ? (
-            <div className="space-y-2.5">
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between">
-                  <Badge variant="linkedin" size="sm" icon={<LinkedinIcon className="w-3 h-3" />}>
-                    LinkedIn Draft
-                  </Badge>
-                  <Badge variant="warning" size="sm">
-                    In Review
-                  </Badge>
-                </div>
-                <p className="text-xs text-slate-800 line-clamp-3 font-normal leading-relaxed">
-                  Most engineers configure database connection pools wrong in serverless... Here are 3 architecture fixes to avoid cold-start connection limits.
-                </p>
-                <div className="pt-1 flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400">845 chars</span>
-                  <Button variant="primary" size="sm" onClick={() => onNavigate('review')}>
-                    Open Reviewer
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <EmptyState
-              icon={<FileText className="w-5 h-5" />}
-              title="No draft posts currently in review."
-              description="Generated LinkedIn post drafts will appear here for you to polish and approve."
-              actionLabel="Generate New Draft"
-              onAction={() => onNavigate('capture-status')}
-            />
-          )}
-        </>
+        <EmptyState
+          icon={<FileText className="w-5 h-5" />}
+          title="No draft posts currently in review."
+          description="Generated LinkedIn post drafts will appear here for you to polish and approve."
+          actionLabel="Generate New Draft"
+          onAction={() => onNavigate('popup')}
+        />
       )}
 
       {/* 4. Approved Posts Tab */}
       {activeTab === 'approved' && (
-        <>
-          {showSampleData ? (
-            <div className="space-y-2.5">
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between">
-                  <Badge variant="linkedin" size="sm" icon={<LinkedinIcon className="w-3 h-3" />}>
-                    LinkedIn
-                  </Badge>
-                  <Badge variant="success" size="sm" icon={<CheckCircle2 className="w-3 h-3" />}>
-                    Approved
-                  </Badge>
-                </div>
-                <p className="text-xs text-slate-800 line-clamp-2 leading-relaxed">
-                  How we cut our API latency by 40% using isolated AI prompt caching and PostgreSQL connection pooling.
-                </p>
-                <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1">
-                  <span>Approved: Yesterday</span>
-                  <span className="text-brand-600 font-semibold cursor-pointer">Copy to Clipboard</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <EmptyState
-              icon={<CheckCircle2 className="w-5 h-5" />}
-              title="No approved posts yet."
-              description="When you approve generated LinkedIn posts, they are safely saved here for easy sharing."
-              actionLabel="Review Drafts"
-              onAction={() => setActiveTab('drafts')}
-            />
-          )}
-        </>
+        <EmptyState
+          icon={<CheckCircle2 className="w-5 h-5" />}
+          title="No approved posts yet."
+          description="When you approve generated LinkedIn posts, they are safely saved here for easy sharing."
+          actionLabel="Review Drafts"
+          onAction={() => setActiveTab('drafts')}
+        />
       )}
 
       {/* Bottom helper */}
