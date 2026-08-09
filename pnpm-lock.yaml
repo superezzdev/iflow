@@ -209,6 +209,10 @@ importers:
         version: 5.9.3
 
   packages/shared:
+    dependencies:
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
     devDependencies:
       '@mindpost/config':
         specifier: workspace:*
@@ -216,6 +220,9 @@ importers:
       typescript:
         specifier: ^5.8.2
         version: 5.9.3
+      vitest:
+        specifier: ^3.0.8
+        version: 3.2.7(@types/node@22.20.1)(happy-dom@17.6.3)(jiti@2.7.0)(lightningcss@1.33.0)
 
 packages:
 
