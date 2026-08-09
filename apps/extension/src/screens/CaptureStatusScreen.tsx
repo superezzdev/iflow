@@ -1,27 +1,47 @@
-import { useState, type FC } from 'react';
-import { MessageSquare, Sparkles, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw, Layers } from 'lucide-react';
+import { useState, useEffect, type FC } from 'react';
+import {
+  MessageSquare,
+  Sparkles,
+  CheckCircle2,
+  ArrowLeft,
+  LayoutDashboard,
+  User,
+  Bot
+} from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { StatusIndicator } from '../components/ui/StatusIndicator';
+import { getLatestCapturedConversation } from '../utils/storage';
 import type { ExtensionScreen } from '../components/Header';
+import type { CapturedConversation } from '@mindpost/shared';
 
 export interface CaptureStatusScreenProps {
   onNavigate: (screen: ExtensionScreen) => void;
+  conversation?: CapturedConversation | null;
 }
 
-export const CaptureStatusScreen: FC<CaptureStatusScreenProps> = ({ onNavigate }) => {
-  const [capturePhase, setCapturePhase] = useState<'idle' | 'scanning' | 'captured'>('captured');
+export const CaptureStatusScreen: FC<CaptureStatusScreenProps> = ({
+  onNavigate,
+  conversation: propConversation
+}) => {
+  const [conversation, setConversation] = useState<CapturedConversation | null>(
+    propConversation || null
+  );
+  const [isLoading, setIsLoading] = useState<boolean>(!propConversation);
 
-  // Simulated capture preview metadata for UI demonstration
-  const mockConversation = {
-    title: 'PostgreSQL Connection Pooling Architecture in Serverless Next.js',
-    source: 'chatgpt' as const,
-    url: 'https://chatgpt.com/c/67890-abc-123',
-    messageCount: 6,
-    userTurns: 3,
-    assistantTurns: 3,
-    capturedAt: 'Just now'
-  };
+  useEffect(() => {
+    if (!propConversation) {
+      getLatestCapturedConversation().then((latest) => {
+        setConversation(latest);
+        setIsLoading(false);
+      });
+    }
+  }, [propConversation]);
+
+  const userMessagesCount =
+    conversation?.messages.filter((m) => m.role === 'user').length || 0;
+  const assistantMessagesCount =
+    conversation?.messages.filter((m) => m.role === 'assistant').length || 0;
 
   return (
     <div className="p-4 space-y-4">
@@ -29,73 +49,96 @@ export const CaptureStatusScreen: FC<CaptureStatusScreenProps> = ({ onNavigate }
       <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <span className="p-1.5 bg-brand-50 text-brand-600 rounded-lg">
-              <MessageSquare className="w-4 h-4" />
+            <span className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
+              <CheckCircle2 className="w-4 h-4" />
             </span>
             <div>
-              <h3 className="text-xs font-bold text-slate-900">Conversation Capture Status</h3>
-              <p className="text-[10px] text-slate-500">ChatGPT Session Inspector</p>
+              <h3 className="text-xs font-bold text-slate-900">Conversation Captured</h3>
+              <p className="text-[10px] text-emerald-600 font-medium">Ready for insight extraction</p>
             </div>
           </div>
-          <StatusIndicator sourceName="ChatGPT" state={capturePhase === 'scanning' ? 'capturing' : 'ready'} />
-        </div>
-
-        {/* Phase Timeline */}
-        <div className="grid grid-cols-3 gap-1 pt-1">
-          {[
-            { phase: 'idle', label: '1. Detect Tab', icon: Layers },
-            { phase: 'scanning', label: '2. Parse DOM', icon: RefreshCw },
-            { phase: 'captured', label: '3. Captured', icon: CheckCircle2 }
-          ].map((step) => {
-            const isCurrent = capturePhase === step.phase;
-            const isCompleted = capturePhase === 'captured';
-
-            return (
-              <div
-                key={step.label}
-                className={`p-2 rounded-lg text-center flex flex-col items-center border transition-all ${
-                  isCurrent || isCompleted
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-semibold'
-                    : 'bg-slate-50 border-slate-200 text-slate-400'
-                }`}
-              >
-                <step.icon className={`w-3.5 h-3.5 mb-1 ${isCurrent ? 'animate-pulse' : ''}`} />
-                <span className="text-[10px]">{step.label}</span>
-              </div>
-            );
-          })}
+          <StatusIndicator sourceName="ChatGPT" state="ready" />
         </div>
       </div>
 
-      {/* Captured Conversation Details Card */}
-      {capturePhase === 'captured' ? (
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1">
-              <Badge variant="brand" size="sm" className="mb-1.5">
-                Ready for Extraction
+      {isLoading ? (
+        <div className="p-8 text-center text-xs text-slate-500 bg-white rounded-xl border border-slate-200">
+          Loading conversation data...
+        </div>
+      ) : conversation ? (
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3.5">
+          {/* Title & Metadata */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Badge variant="brand" size="sm">
+                ChatGPT Capture
               </Badge>
-              <h4 className="text-xs font-bold text-slate-900 leading-snug">
-                {mockConversation.title}
-              </h4>
+              <span className="text-[10px] text-slate-400">
+                {new Date(conversation.capturedAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+            <h4 className="text-xs font-bold text-slate-900 leading-snug">
+              {conversation.title}
+            </h4>
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div className="grid grid-cols-3 gap-2 p-2 bg-slate-50 rounded-lg border border-slate-100 text-center">
+            <div className="p-1">
+              <span className="text-[10px] text-slate-400 block">Total Turns</span>
+              <span className="text-xs font-bold text-slate-800">
+                {conversation.totalMessages}
+              </span>
+            </div>
+            <div className="p-1 border-x border-slate-200">
+              <span className="text-[10px] text-slate-400 block">Questions</span>
+              <span className="text-xs font-bold text-brand-600">
+                {userMessagesCount}
+              </span>
+            </div>
+            <div className="p-1">
+              <span className="text-[10px] text-slate-400 block">AI Answers</span>
+              <span className="text-xs font-bold text-emerald-600">
+                {assistantMessagesCount}
+              </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 p-2.5 bg-slate-50 rounded-lg text-[11px] text-slate-600 border border-slate-100">
-            <div>
-              <span className="text-slate-400 block text-[10px]">Total Messages:</span>
-              <span className="font-semibold text-slate-800">{mockConversation.messageCount} turns</span>
-            </div>
-            <div>
-              <span className="text-slate-400 block text-[10px]">Captured:</span>
-              <span className="font-semibold text-slate-800">{mockConversation.capturedAt}</span>
-            </div>
-            <div className="col-span-2 truncate">
-              <span className="text-slate-400 block text-[10px]">Source URL:</span>
-              <span className="font-mono text-[10px] text-slate-700">{mockConversation.url}</span>
+          {/* Message Turns Preview List */}
+          <div className="space-y-2">
+            <span className="text-[11px] font-semibold text-slate-700 block">
+              Captured Transcript Preview
+            </span>
+            <div className="max-h-44 overflow-y-auto space-y-2 pr-1">
+              {conversation.messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`p-2.5 rounded-lg border text-[11px] space-y-1 ${
+                    msg.role === 'user'
+                      ? 'bg-blue-50/60 border-blue-100 text-slate-800'
+                      : 'bg-slate-50 border-slate-200 text-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center space-x-1.5 text-[10px] font-semibold text-slate-500">
+                    {msg.role === 'user' ? (
+                      <User className="w-3 h-3 text-blue-600" />
+                    ) : (
+                      <Bot className="w-3 h-3 text-emerald-600" />
+                    )}
+                    <span className="capitalize">{msg.role}</span>
+                  </div>
+                  <p className="line-clamp-3 leading-relaxed whitespace-pre-wrap">
+                    {msg.content}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 
+          {/* Actions */}
           <div className="space-y-2 pt-1">
             <Button
               variant="primary"
@@ -112,10 +155,10 @@ export const CaptureStatusScreen: FC<CaptureStatusScreenProps> = ({ onNavigate }
                 variant="outline"
                 size="sm"
                 className="flex-1"
-                icon={<RefreshCw className="w-3 h-3" />}
-                onClick={() => setCapturePhase('scanning')}
+                icon={<LayoutDashboard className="w-3 h-3" />}
+                onClick={() => onNavigate('dashboard')}
               >
-                Re-scan Tab
+                View in Dashboard
               </Button>
               <Button
                 variant="ghost"
@@ -129,36 +172,17 @@ export const CaptureStatusScreen: FC<CaptureStatusScreenProps> = ({ onNavigate }
           </div>
         </div>
       ) : (
-        <div className="p-6 bg-white rounded-xl border border-slate-200 text-center space-y-3">
-          <div className="w-10 h-10 rounded-full bg-brand-50 text-brand-600 mx-auto flex items-center justify-center animate-spin">
-            <RefreshCw className="w-5 h-5" />
-          </div>
-          <h4 className="text-xs font-semibold text-slate-900">Scanning active ChatGPT tab...</h4>
+        <div className="p-8 bg-white rounded-xl border border-slate-200 text-center space-y-3">
+          <MessageSquare className="w-8 h-8 text-slate-400 mx-auto" />
+          <h4 className="text-xs font-semibold text-slate-900">No active capture found</h4>
           <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
-            Reading conversation DOM nodes with isolated selector heuristics.
+            Please navigate to an open ChatGPT tab and click &quot;Capture this conversation&quot;.
           </p>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setCapturePhase('captured')}
-          >
-            Complete Simulated Scan
+          <Button variant="primary" size="sm" onClick={() => onNavigate('popup')}>
+            Go to Capture Screen
           </Button>
         </div>
       )}
-
-      {/* Workflow Navigation info */}
-      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-        <span className="text-[11px] text-slate-600">Want to review saved posts?</span>
-        <button
-          type="button"
-          onClick={() => onNavigate('dashboard')}
-          className="text-[11px] font-semibold text-brand-600 hover:text-brand-700 inline-flex items-center space-x-1 cursor-pointer"
-        >
-          <span>Open Dashboard</span>
-          <ArrowRight className="w-3 h-3" />
-        </button>
-      </div>
     </div>
   );
 };
